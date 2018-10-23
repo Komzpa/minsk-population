@@ -23,7 +23,9 @@ create table where_people_live as (
           and railway is null -- уберём депо метрополитена
           and amenity is null -- уберём автобусные депо, кинотеатры, детские сады, школы
           and leisure is null -- уберём стадионы
-          and name is null -- уберём всё именованное, оно скорее всего административное или теплицы
+
+          -- нельзя, все большие жилые комплексы именованы:
+          -- and name is null -- уберём всё именованное, оно скорее всего административное или теплицы
 );
 
 create index on where_people_live using gist (geom);
@@ -40,6 +42,7 @@ where
 -- у многих зданий нет этажности
 
 -- предположим, что в кварталах городской застройки - пятиэтажки, а в частном секторе - одноэтажные дома
+-- расставлять этажность нужно только тем домам, у которых её нет
 update where_people_live b
 set
     levels =
@@ -51,7 +54,8 @@ set
 from planet_osm_polygon p
 where
     ST_Intersects(p.way, b.geom)
-    and p.tags ? 'residential';
+    and p.tags ? 'residential'
+    and levels is null;
 
 -- поставим отсутствующие этажности по популярной этажности в окрестности в 1000 метров, если такая есть
 update where_people_live b
